@@ -1,0 +1,588 @@
+### ─────────────────────────────────────────
+### BASE URL
+### ─────────────────────────────────────────
+@baseUrl = http://localhost:8080/api/v1
+@contentType = application/json
+
+
+### ─────────────────────────────────────────
+### AUTH
+### ─────────────────────────────────────────
+
+### 1. Register (sends welcome email)
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "password123",
+  "displayName": "Test User",
+  "birthDate": "1995-06-15"
+}
+
+### ─────────────────────────────────────────
+@authToken = {{register.response.body.accessToken}}
+@userId = {{register.response.body.user.id}}
+### ─────────────────────────────────────────
+
+### 2. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### ─────────────────────────────────────────
+@authToken = {{login.response.body.accessToken}}
+@userId = {{login.response.body.user.id}}
+### ─────────────────────────────────────────
+
+### 3. Forgot password (sends reset email)
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com"
+}
+
+### 4. Reset password (use token from email or console log)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "token": "paste-token-from-email-here",
+  "newPassword": "newpassword123"
+}
+
+### ─────────────────────────────────────────
+### ERROR CASES - AUTH
+### ─────────────────────────────────────────
+
+### ERR - Duplicate email
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "anotheruser",
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### ERR - Wrong password
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "test@example.com",
+  "password": "wrongpassword"
+}
+
+### ERR - Invalid reset token
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+
+{
+  "token": "invalid-token",
+  "newPassword": "newpassword123"
+}
+
+
+### ─────────────────────────────────────────
+### USER
+### ─────────────────────────────────────────
+
+### 5. Get user by id
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{authToken}}
+
+### 6. Update user profile
+PATCH {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "displayName": "Updated Name",
+  "bio": "My new bio",
+  "birthDate": "1995-06-15"
+}
+
+### 7. Upload avatar (multipart — run in terminal)
+# curl.exe -X POST http://localhost:8080/api/v1/users/me/avatar
+#   -H "Authorization: Bearer <token>"
+#   -F "file=@C:\path\to\avatar.jpg;type=image/jpeg"
+
+### 8. Update role and account type (admin only)
+PATCH {{baseUrl}}/users/{{userId}}/role
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "role": "ARTIST",
+  "accountType": "PRO"
+}
+
+### ─────────────────────────────────────────
+### ERROR CASES - USER
+### ─────────────────────────────────────────
+
+### ERR - Update role without admin token
+PATCH {{baseUrl}}/users/{{userId}}/role
+Content-Type: {{contentType}}
+
+{
+  "role": "ADMIN"
+}
+
+
+### ─────────────────────────────────────────
+### GENRE
+### ─────────────────────────────────────────
+
+### 9. Create genre (admin only)
+# @name createGenre
+POST {{baseUrl}}/genres
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "name": "Pop",
+  "slug": "pop"
+}
+
+### ─────────────────────────────────────────
+@genreId = {{createGenre.response.body.id}}
+### ─────────────────────────────────────────
+
+### 10. Get all genres
+GET {{baseUrl}}/genres
+
+### 11. Get genre by id
+GET {{baseUrl}}/genres/{{genreId}}
+
+### 12. Delete genre (admin only)
+DELETE {{baseUrl}}/genres/{{genreId}}
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### ALBUM
+### ─────────────────────────────────────────
+
+### 13. Create album (artist/admin only)
+# @name createAlbum
+POST {{baseUrl}}/albums
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "artistId": {{userId}},
+  "title": "My First Album",
+  "coverUrl": "https://example.com/cover.jpg",
+  "releaseDate": "2024-01-01"
+}
+
+### ─────────────────────────────────────────
+@albumId = {{createAlbum.response.body.id}}
+### ─────────────────────────────────────────
+
+### 14. Get album by id
+GET {{baseUrl}}/albums/{{albumId}}
+
+### 15. Get albums by artist
+GET {{baseUrl}}/albums/artist/{{userId}}
+
+### 16. Search albums by title
+GET {{baseUrl}}/albums/search?title=first
+
+### 17. Delete album (owner/admin only)
+DELETE {{baseUrl}}/albums/{{albumId}}
+Authorization: Bearer {{authToken}}
+
+### ─────────────────────────────────────────
+### ERROR CASES - ALBUM
+### ─────────────────────────────────────────
+
+### ERR - Get non-existent album
+GET {{baseUrl}}/albums/99999
+
+### ERR - Create album as non-artist
+POST {{baseUrl}}/albums
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "artistId": {{userId}},
+  "title": "Unauthorized Album"
+}
+
+
+### ─────────────────────────────────────────
+### SONG
+### ─────────────────────────────────────────
+
+### 18. Create song (artist/admin only — multipart, run in terminal)
+# curl.exe -X POST http://localhost:8080/api/v1/songs
+#   -H "Authorization: Bearer <token>"
+#   -F "data={\"artistId\":1,\"albumId\":1,\"title\":\"My First Song\",\"durationSeconds\":210,\"coverUrl\":\"https://example.com/cover.jpg\",\"requiredAccountType\":\"NORMAL\"};type=application/json"
+#   -F "file=@C:\path\to\song.mp3;type=audio/mpeg"
+
+### ─────────────────────────────────────────
+@songId = 1
+### ─────────────────────────────────────────
+
+### 19. Get song by id
+GET {{baseUrl}}/songs/{{songId}}
+
+### 20. Get songs by album
+GET {{baseUrl}}/songs/album/{{albumId}}
+
+### 21. Get songs by artist
+GET {{baseUrl}}/songs/artist/{{userId}}
+
+### 22. Get songs by genre
+GET {{baseUrl}}/songs/genre/{{genreId}}
+
+### 23. Get all live songs (sorted by play count)
+GET {{baseUrl}}/songs
+
+### 24. Search songs by title
+GET {{baseUrl}}/songs/search?title=first
+
+### 25. Publish song (owner/admin only)
+PATCH {{baseUrl}}/songs/{{songId}}/publish
+Authorization: Bearer {{authToken}}
+
+### 26. Play song (checks account type, records earnings)
+PATCH {{baseUrl}}/songs/{{songId}}/playback
+Authorization: Bearer {{authToken}}
+
+### 27. Soft delete song (owner/admin only)
+DELETE {{baseUrl}}/songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### ─────────────────────────────────────────
+### ERROR CASES - SONG
+### ─────────────────────────────────────────
+
+### ERR - Get non-existent song
+GET {{baseUrl}}/songs/99999
+
+### ERR - Play premium song without premium account
+PATCH {{baseUrl}}/songs/{{songId}}/playback
+Authorization: Bearer {{authToken}}
+
+### ERR - Publish another artist's song
+PATCH {{baseUrl}}/songs/{{songId}}/publish
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### LIKED SONGS
+### ─────────────────────────────────────────
+
+### 28. Like a song
+POST {{baseUrl}}/liked-songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### 29. Check if song is liked
+GET {{baseUrl}}/liked-songs/{{songId}}/status
+Authorization: Bearer {{authToken}}
+
+### 30. Get my liked songs
+GET {{baseUrl}}/liked-songs
+Authorization: Bearer {{authToken}}
+
+### 31. Unlike a song
+DELETE {{baseUrl}}/liked-songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### ─────────────────────────────────────────
+### ERROR CASES - LIKED SONGS
+### ─────────────────────────────────────────
+
+### ERR - Like same song twice
+POST {{baseUrl}}/liked-songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### PLAYLISTS
+### ─────────────────────────────────────────
+
+### 32. Create playlist
+# @name createPlaylist
+POST {{baseUrl}}/playlists
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "My Playlist",
+  "description": "My favorite songs",
+  "isPublic": true
+}
+
+### ─────────────────────────────────────────
+@playlistId = {{createPlaylist.response.body.id}}
+### ─────────────────────────────────────────
+
+### 33. Get public playlists
+GET {{baseUrl}}/playlists
+
+### 34. Get my playlists
+GET {{baseUrl}}/playlists/me
+Authorization: Bearer {{authToken}}
+
+### 35. Get playlist by id
+GET {{baseUrl}}/playlists/{{playlistId}}
+
+### 36. Get songs in playlist
+GET {{baseUrl}}/playlists/{{playlistId}}/songs
+
+### 37. Update playlist (owner/admin only)
+PATCH {{baseUrl}}/playlists/{{playlistId}}
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "Updated Playlist",
+  "isPublic": false
+}
+
+### 38. Add song to playlist (owner/admin only)
+POST {{baseUrl}}/playlists/{{playlistId}}/songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### 39. Remove song from playlist (owner/admin only)
+DELETE {{baseUrl}}/playlists/{{playlistId}}/songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### 40. Follow playlist
+POST {{baseUrl}}/playlists/{{playlistId}}/follow
+Authorization: Bearer {{authToken}}
+
+### 41. Unfollow playlist
+DELETE {{baseUrl}}/playlists/{{playlistId}}/follow
+Authorization: Bearer {{authToken}}
+
+### 42. Delete playlist (owner/admin only)
+DELETE {{baseUrl}}/playlists/{{playlistId}}
+Authorization: Bearer {{authToken}}
+
+### ─────────────────────────────────────────
+### ERROR CASES - PLAYLIST
+### ─────────────────────────────────────────
+
+### ERR - Add same song twice
+POST {{baseUrl}}/playlists/{{playlistId}}/songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### ERR - Update another user's playlist
+PATCH {{baseUrl}}/playlists/{{playlistId}}
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "title": "Hacked Playlist"
+}
+
+
+### ─────────────────────────────────────────
+### ARTIST FOLLOWS
+### ─────────────────────────────────────────
+
+### 43. Follow artist
+POST {{baseUrl}}/artists/{{userId}}/follow
+Authorization: Bearer {{authToken}}
+
+### 44. Unfollow artist
+DELETE {{baseUrl}}/artists/{{userId}}/follow
+Authorization: Bearer {{authToken}}
+
+### 45. Check if following artist
+GET {{baseUrl}}/artists/{{userId}}/following/status
+Authorization: Bearer {{authToken}}
+
+### 46. Get follower count
+GET {{baseUrl}}/artists/{{userId}}/followers/count
+
+### 47. Get artists I follow
+GET {{baseUrl}}/artists/following
+Authorization: Bearer {{authToken}}
+
+### ─────────────────────────────────────────
+### ERROR CASES - ARTIST FOLLOWS
+### ─────────────────────────────────────────
+
+### ERR - Follow same artist twice
+POST {{baseUrl}}/artists/{{userId}}/follow
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### PLAY HISTORY
+### ─────────────────────────────────────────
+
+### 48. Record play history
+POST {{baseUrl}}/history/songs/{{songId}}
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "secondsPlayed": 180,
+  "deviceType": "DESKTOP"
+}
+
+### 49. Get my play history
+GET {{baseUrl}}/history
+Authorization: Bearer {{authToken}}
+
+### 50. Clear play history
+DELETE {{baseUrl}}/history
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### SONG COMMENTS
+### ─────────────────────────────────────────
+
+### 51. Add comment
+# @name createComment
+POST {{baseUrl}}/songs/{{songId}}/comments
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "content": "Great song!"
+}
+
+### ─────────────────────────────────────────
+@commentId = {{createComment.response.body.id}}
+### ─────────────────────────────────────────
+
+### 52. Add reply to comment
+POST {{baseUrl}}/songs/{{songId}}/comments
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "content": "I agree!",
+  "parentCommentId": {{commentId}}
+}
+
+### 53. Get top-level comments for songn
+GET {{baseUrl}}/songs/{{songId}}/comments
+
+### 54. Get replies for comment
+GET {{baseUrl}}/songs/{{songId}}/comments/{{commentId}}/replies
+
+### 55. Delete comment (owner only)
+DELETE {{baseUrl}}/songs/{{songId}}/comments/{{commentId}}
+Authorization: Bearer {{authToken}}
+
+### ─────────────────────────────────────────
+### ERROR CASES - COMMENTS
+### ─────────────────────────────────────────
+
+### ERR - Delete another user's comment
+DELETE {{baseUrl}}/songs/{{songId}}/comments/{{commentId}}
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### SUBSCRIPTIONS
+### ─────────────────────────────────────────
+
+### 56. Subscribe to PRO (sends confirmation email)
+POST {{baseUrl}}/subscriptions
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "planType": "PRO"
+}
+
+### 57. Subscribe to PREMIUM (sends confirmation email)
+POST {{baseUrl}}/subscriptions
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "planType": "PREMIUM"
+}
+
+### 58. Check active subscription
+GET {{baseUrl}}/subscriptions/active
+Authorization: Bearer {{authToken}}
+
+### 59. Get subscription history
+GET {{baseUrl}}/subscriptions
+Authorization: Bearer {{authToken}}
+
+### 60. Cancel subscription (sends cancellation email)
+DELETE {{baseUrl}}/subscriptions/cancel
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### ARTIST EARNINGS
+### ─────────────────────────────────────────
+
+### 61. Get my earnings
+GET {{baseUrl}}/earnings
+Authorization: Bearer {{authToken}}
+
+### 62. Get earnings summary
+GET {{baseUrl}}/earnings/summary
+Authorization: Bearer {{authToken}}
+
+### 63. Get earnings by artist id (admin)
+GET {{baseUrl}}/earnings/{{userId}}
+Authorization: Bearer {{authToken}}
+
+
+### ─────────────────────────────────────────
+### ADMIN
+### ─────────────────────────────────────────
+
+### 64. Get all users (admin only)
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{authToken}}
+
+### 65. Get users by role (admin only)
+GET {{baseUrl}}/admin/users/role/ARTIST
+Authorization: Bearer {{authToken}}
+
+### 66. Update user role (admin only)
+PATCH {{baseUrl}}/admin/users/{{userId}}/role
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
+
+{
+  "role": "ARTIST",
+  "accountType": "NORMAL"
+}
+
+### 67. Deactivate user (admin only)
+PATCH {{baseUrl}}/admin/users/{{userId}}/deactivate
+Authorization: Bearer {{authToken}}
+
+### 68. Activate user (admin only)
+PATCH {{baseUrl}}/admin/users/{{userId}}/activate
+Authorization: Bearer {{authToken}}
+
+### 69. Hard delete user (admin only)
+DELETE {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{authToken}}
+
+### 70. Hard delete song (admin only)
+DELETE {{baseUrl}}/admin/songs/{{songId}}
+Authorization: Bearer {{authToken}}
+
+### 71. Publish any song (admin only)
+PATCH {{baseUrl}}/admin/songs/{{songId}}/publish
+Authorization: Bearer {{authToken}}

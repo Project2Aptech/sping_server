@@ -63,14 +63,15 @@ public class SongController {
             @RequestPart("data") SongDTO.SongRequest request,
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) throws IOException {
-        Integer currentUserId = CustomUserDetails.extractId(userDetails);
-        if (userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ADMIN"))) {
-            return ResponseEntity.ok(songService.create(request, file, request.artistId()));
-        }
-        return ResponseEntity.ok(songService.create(request, file, currentUserId));
-    }
 
+        Integer currentUserId = CustomUserDetails.extractId(userDetails);
+
+        boolean isAdmin = CustomUserDetails.isAdmin(userDetails);
+
+        Integer artistId = isAdmin ? request.artistId() : currentUserId;
+
+        return ResponseEntity.ok(songService.create(request, file, artistId));
+    }
     @PatchMapping("/{id}/publish")
     @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
     public ResponseEntity<SongDTO.SongDetailResponse> publish(

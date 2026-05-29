@@ -25,22 +25,37 @@ public class UserService {
     private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
-    public UserDTO.UserDetailResponse findById(Integer id) {
+    public UserDTO.UserPublicResponse findPublicById(Integer id) {
         return userRepository.findById(id)
-                .map(this::toDetailResponse)
+                .map(this::toPublicResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
     }
 
-    public UserDTO.UserDetailResponse update(Integer id, UserDTO.UpdateRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+    @Transactional(readOnly = true)
+    public UserDTO.UserSelfResponse findSelf(Integer currentUserId) {
+        return userRepository.findById(currentUserId)
+                .map(this::toSelfResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserId));
+    }
 
-        if (request.displayName() != null) user.setDisplayName(request.displayName());
-        if (request.bio() != null) user.setBio(request.bio());
-        if (request.avatarUrl() != null) user.setAvatarUrl(request.avatarUrl());
-        if (request.birthDate() != null) user.setBirthDate(request.birthDate());
+    @Transactional(readOnly = true)
+    public Page<UserDTO.UserPublicResponse> findAll(String query, Pageable pageable) {
+        if (query != null && !query.isBlank()) {
+            return userRepository.findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(
+                            query, query, pageable)
+                    .map(this::toPublicResponse);
+        }
+        return userRepository.findAll(pageable).map(this::toPublicResponse);
+    }
 
-        return toDetailResponse(userRepository.save(user));
+    @Transactional(readOnly = true)
+    public Page<UserDTO.UserDetailResponse> findAllAdmin(String query, Pageable pageable) {
+        if (query != null && !query.isBlank()) {
+            return userRepository.findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(
+                            query, query, pageable)
+                    .map(this::toDetailResponse);
+        }
+        return userRepository.findAll(pageable).map(this::toDetailResponse);
     }
 
     public UserDTO.UserDetailResponse updateRole(Integer id, UserDTO.AdminUpdateRequest request) {
@@ -51,12 +66,6 @@ public class UserService {
         if (request.accountType() != null) user.setAccountType(request.accountType());
 
         return toDetailResponse(userRepository.save(user));
-    }
-
-    @Transactional(readOnly = true)
-    public Page<UserDTO.UserDetailResponse> findAll(Pageable pageable) {
-        return userRepository.findAll(pageable)
-                .map(this::toDetailResponse);
     }
 
     @Transactional(readOnly = true)
@@ -78,6 +87,36 @@ public class UserService {
         return toDetailResponse(userRepository.save(user));
     }
 
+    public void deactivate(Integer id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+        user.setActive(false);
+        userRepository.save(user);
+    }
+
+    public UserDTO.UserSelfResponse updateSelf(Integer id, UserDTO.UpdateRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
+
+        if (request.displayName() != null) user.setDisplayName(request.displayName());
+        if (request.bio() != null)         user.setBio(request.bio());
+        if (request.avatarUrl() != null)   user.setAvatarUrl(request.avatarUrl());
+        if (request.birthDate() != null)   user.setBirthDate(request.birthDate());
+
+        return toSelfResponse(userRepository.save(user));
+    }
+
+    public UserDTO.UserSelfResponse uploadAvatar(Integer userId, MultipartFile file)
+            throws IOException, java.io.IOException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        String avatarUrl = cloudinaryService.uploadImage(file);
+        user.setAvatarUrl(avatarUrl);
+
+        return toSelfResponse(userRepository.save(user));
+    }
+
     private UserDTO.UserDetailResponse toDetailResponse(User user) {
         return new UserDTO.UserDetailResponse(
                 user.getId(),
@@ -94,21 +133,26 @@ public class UserService {
         );
     }
 
-    public void deactivate(Integer id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
-        user.setActive(false);
-        userRepository.save(user);
+    private UserDTO.UserPublicResponse toPublicResponse(User user) {
+        return new UserDTO.UserPublicResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getDisplayName(),
+                user.getAvatarUrl(),
+                user.getBio(),
+                user.getBirthDate()
+        );
     }
 
-    public UserDTO.UserDetailResponse uploadAvatar(Integer userId, MultipartFile file)
-            throws IOException, java.io.IOException {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
-
-        String avatarUrl = cloudinaryService.uploadImage(file);
-        user.setAvatarUrl(avatarUrl);
-
-        return toDetailResponse(userRepository.save(user));
+    private UserDTO.UserSelfResponse toSelfResponse(User user) {
+        return new UserDTO.UserSelfResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getDisplayName(),
+                user.getAvatarUrl(),
+                user.getBio(),
+                user.getBirthDate()
+        );
     }
 }

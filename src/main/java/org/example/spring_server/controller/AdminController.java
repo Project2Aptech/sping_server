@@ -21,12 +21,11 @@ public class AdminController {
     private final UserService userService;
     private final SongService songService;
 
-    // ── Users ──
-
     @GetMapping("/users")
     public ResponseEntity<Page<UserDTO.UserDetailResponse>> getAllUsers(
+            @RequestParam(required = false) String query,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(userService.findAll(pageable));
+        return ResponseEntity.ok(userService.findAllAdmin(query, pageable));
     }
 
     @GetMapping("/users/role/{role}")
@@ -58,8 +57,6 @@ public class AdminController {
     public ResponseEntity<UserDTO.UserDetailResponse> activateUser(@PathVariable Integer id) {
         return ResponseEntity.ok(userService.setActive(id, true));
     }
-
-    // ── Songs ──
 
     @DeleteMapping("/songs/{id}")
     public ResponseEntity<Void> deleteSong(@PathVariable Integer id) {

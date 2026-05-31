@@ -10,11 +10,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/albums")
@@ -50,7 +54,8 @@ public class AlbumController {
         Integer currentUserId = CustomUserDetails.extractId(userDetails);
         boolean isAdmin = CustomUserDetails.isAdmin(userDetails);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(albumService.create(request, isAdmin ? request.artistId() : currentUserId));
+                .body(albumService.create(
+                        request, isAdmin ? request.artistId() : currentUserId));
     }
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
@@ -61,5 +66,22 @@ public class AlbumController {
         boolean isAdmin = CustomUserDetails.isAdmin(userDetails);
         albumService.delete(id, isAdmin ? null : currentUserId);
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping
+    public ResponseEntity<Page<AlbumDTO.AlbumSummaryResponse>> getAll(
+            @PageableDefault(size = 20, sort = "releaseDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(albumService.findAll(pageable));
+    }
+
+    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
+    public ResponseEntity<AlbumDTO.AlbumResponse> uploadCover(
+            @PathVariable Integer id,
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) throws IOException, IOException {
+        return ResponseEntity.ok(albumService.uploadCover(
+                id, file,
+                CustomUserDetails.extractId(userDetails),
+                CustomUserDetails.isAdmin(userDetails)));
     }
 }

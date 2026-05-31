@@ -1,15 +1,21 @@
 package org.example.spring_server.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.spring_server.dto.AlbumDTO;
+import org.example.spring_server.dto.PlaylistDTO;
 import org.example.spring_server.dto.UserDTO;
 import org.example.spring_server.enums.enumeration;
+import org.example.spring_server.service.AlbumService;
+import org.example.spring_server.service.PlaylistService;
 import org.example.spring_server.service.SongService;
 import org.example.spring_server.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,7 +26,20 @@ public class AdminController {
 
     private final UserService userService;
     private final SongService songService;
+    private final AlbumService albumService;
+    private PlaylistService playlistService;
 
+    @GetMapping("/playlists")
+    public ResponseEntity<Page<PlaylistDTO.PlaylistSummaryResponse>> getAllPlaylists(
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(playlistService.findAll(pageable));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<AlbumDTO.AlbumSummaryResponse>> getAll(
+            @PageableDefault(size = 20, sort = "releaseDate", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(albumService.findAll(pageable));
+    }
     @GetMapping("/users")
     public ResponseEntity<Page<UserDTO.UserDetailResponse>> getAllUsers(
             @RequestParam(required = false) String query,

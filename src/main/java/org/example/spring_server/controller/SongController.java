@@ -63,15 +63,12 @@ public class SongController {
             @RequestPart("data") SongDTO.SongRequest request,
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) throws IOException {
-
         Integer currentUserId = CustomUserDetails.extractId(userDetails);
-
         boolean isAdmin = CustomUserDetails.isAdmin(userDetails);
-
-        Integer artistId = isAdmin ? request.artistId() : currentUserId;
-
-        return ResponseEntity.ok(songService.create(request, file, artistId));
+        return ResponseEntity.ok(songService.create(
+                request, file, isAdmin ? request.artistId() : currentUserId));
     }
+
     @PatchMapping("/{id}/publish")
     @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
     public ResponseEntity<SongDTO.SongDetailResponse> publish(
@@ -105,5 +102,16 @@ public class SongController {
             @PathVariable Integer genreId,
             @PageableDefault(size = 20, sort = "playCount", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(songService.findByGenre(genreId, pageable));
+    }
+    @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
+    public ResponseEntity<SongDTO.SongDetailResponse> uploadCover(
+            @PathVariable Integer id,
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+        return ResponseEntity.ok(songService.uploadCover(
+                id, file,
+                CustomUserDetails.extractId(userDetails),
+                CustomUserDetails.isAdmin(userDetails)));
     }
 }

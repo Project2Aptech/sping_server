@@ -71,8 +71,14 @@ public class SongService {
     public SongDTO.SongDetailResponse create(SongDTO.SongRequest request, MultipartFile file,
                                              Integer currentUserId) throws IOException {
 
-        if (!request.artistId().equals(currentUserId))
+        // admin can create for any artist, artist can only create for themselves
+        if (!currentUserId.equals(request.artistId()))
             throw new AccessDeniedException("You can only upload songs for your own account");
+
+        // verify the artistId belongs to a user with ARTIST or ADMIN role
+        if (!userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ARTIST)
+                && !userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ADMIN))
+            throw new AccessDeniedException("Target user is not an artist");
 
         User artist = userRepository.findById(request.artistId())
                 .orElseThrow(() -> new ResourceNotFoundException("Artist not found: " + request.artistId()));
@@ -87,6 +93,11 @@ public class SongService {
         if (request.albumId() != null) {
             Album album = albumRepository.findById(request.albumId())
                     .orElseThrow(() -> new ResourceNotFoundException("Album not found: " + request.albumId()));
+
+            // verify album belongs to this artist
+            if (!album.getArtist().getId().equals(request.artistId()))
+                throw new AccessDeniedException("This album does not belong to you");
+
             song.setAlbum(album);
         }
 
@@ -148,5 +159,18 @@ public class SongService {
     public Page<SongDTO.SongSummaryResponse> findByGenre(Integer genreId, Pageable pageable) {
         return songRepository.findLiveByGenreId(genreId, pageable)
                 .map(songMapper::toSummaryResponse);
+    }
+    public SongDTO.SongDetailResponse uploadCover(Integer songId, MultipartFile file,
+                                                  Integer currentUserId, boolean isAdmin) throws IOException {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + songId));
+
+        if (!isAdmin && !song.getArtist().getId().equals(currentUserId))
+            throw new AccessDeniedException("You can only update your own songs");
+
+        String coverUrl = cloudinaryService.uploadImage(file);
+        song.setCoverUrl(coverUrl);
+
+        return songMapper.toDetailResponse(songRepository.save(song));
     }
 }

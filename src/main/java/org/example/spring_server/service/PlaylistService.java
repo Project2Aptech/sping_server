@@ -27,6 +27,12 @@ public class PlaylistService {
     private final SongMapper songMapper;
 
     @Transactional(readOnly = true)
+    public Page<PlaylistDTO.PlaylistSummaryResponse> findAll(Pageable pageable) {
+        return playlistRepository.findAll(pageable)
+                .map(this::toSummary);
+    }
+
+    @Transactional(readOnly = true)
     public Page<PlaylistDTO.PlaylistSummaryResponse> findPublic(Pageable pageable) {
         return playlistRepository.findByIsPublicTrue(pageable)
                 .map(this::toSummary);

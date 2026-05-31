@@ -9,4 +9,6 @@ public interface AlbumRepository extends JpaRepository<Album, Integer> {
     Page<Album> findByArtistId(Integer artistId, Pageable pageable);
     boolean existsByArtistIdAndTitle(Integer artistId, String title);
     Page<Album> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    Page<Album> findAll(Pageable pageable);  // already exists via JpaRepository
 }

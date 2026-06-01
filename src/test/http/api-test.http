@@ -292,6 +292,22 @@ Authorization: Bearer {{authToken}}
 DELETE {{baseUrl}}/songs/{{songId}}
 Authorization: Bearer {{authToken}}
 
+### Tag genre to song (owner/admin only)
+POST {{baseUrl}}/songs/{{songId}}/genres/{{genreId}}
+Authorization: Bearer {{authToken}}
+
+### Remove genre from song (owner/admin only)
+DELETE {{baseUrl}}/songs/{{songId}}/genres/{{genreId}}
+Authorization: Bearer {{authToken}}
+
+### ERR - Tag genre on another artist's song
+POST {{baseUrl}}/songs/{{songId}}/genres/{{genreId}}
+Authorization: Bearer {{authToken}}
+
+### ERR - Tag same genre twice
+POST {{baseUrl}}/songs/{{songId}}/genres/{{genreId}}
+Authorization: Bearer {{authToken}}
+
 ### ─────────────────────────────────────────
 ### ERROR CASES - SONG
 ### ─────────────────────────────────────────

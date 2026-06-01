@@ -3,6 +3,7 @@ package org.example.spring_server.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.spring_server.dto.SongDTO;
 import org.example.spring_server.security.CustomUserDetails;
+import org.example.spring_server.service.SongGenreService;
 import org.example.spring_server.service.SongService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ import java.io.IOException;
 public class SongController {
 
     private final SongService songService;
+    private final SongGenreService songGenreService;
 
     @GetMapping("/{id}")
     public ResponseEntity<SongDTO.SongDetailResponse> getById(@PathVariable Integer id) {
@@ -113,5 +115,31 @@ public class SongController {
                 id, file,
                 CustomUserDetails.extractId(userDetails),
                 CustomUserDetails.isAdmin(userDetails)));
+    }
+
+    @PostMapping("/{id}/genres/{genreId}")
+    @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
+    public ResponseEntity<Void> addGenre(
+            @PathVariable Integer id,
+            @PathVariable Integer genreId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        songGenreService.addGenre(
+                id, genreId,
+                CustomUserDetails.extractId(userDetails),
+                CustomUserDetails.isAdmin(userDetails));
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/genres/{genreId}")
+    @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
+    public ResponseEntity<Void> removeGenre(
+            @PathVariable Integer id,
+            @PathVariable Integer genreId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        songGenreService.removeGenre(
+                id, genreId,
+                CustomUserDetails.extractId(userDetails),
+                CustomUserDetails.isAdmin(userDetails));
+        return ResponseEntity.noContent().build();
     }
 }

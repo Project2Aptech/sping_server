@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import org.example.spring_server.enums.enumeration;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class SongDTO {
 
@@ -30,6 +31,7 @@ public class SongDTO {
             Long playCount,
             enumeration.SongStatus status,
             enumeration.AccountType requiredAccountType,
+            List<GenreDTO.GenreSummaryResponse> genres,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
     ) {}
@@ -37,6 +39,7 @@ public class SongDTO {
     public record SongSummaryResponse(
             Integer id,
             Integer artistId,
+            Integer albumId,
             String title,
             Integer durationSeconds,
             String coverUrl,

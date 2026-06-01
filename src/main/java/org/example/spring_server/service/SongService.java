@@ -1,6 +1,7 @@
 package org.example.spring_server.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.spring_server.dto.GenreDTO;
 import org.example.spring_server.dto.SongDTO;
 import org.example.spring_server.entity.Album;
 import org.example.spring_server.entity.History;
@@ -9,10 +10,7 @@ import org.example.spring_server.entity.User;
 import org.example.spring_server.enums.enumeration;
 import org.example.spring_server.exception.ResourceNotFoundException;
 import org.example.spring_server.mapper.SongMapper;
-import org.example.spring_server.repository.AlbumRepository;
-import org.example.spring_server.repository.HistoryRepository;
-import org.example.spring_server.repository.SongRepository;
-import org.example.spring_server.repository.UserRepository;
+import org.example.spring_server.repository.*;
 import org.example.spring_server.service.cloudinary.CloudinaryService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,12 +35,13 @@ public class SongService {
     private final CloudinaryService cloudinaryService;
     private final HistoryRepository historyRepository;
     private final ArtistEarningService artistEarningService;
+    private final SongGenreRepository songGenreRepository;
 
     @Transactional(readOnly = true)
     public SongDTO.SongDetailResponse findById(Integer id) {
-        return songRepository.findById(id)
-                .map(songMapper::toDetailResponse)
+        Song song = songRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + id));
+        return toDetailResponse(song);
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +101,7 @@ public class SongService {
             song.setAlbum(album);
         }
 
-        return songMapper.toDetailResponse(songRepository.save(song));
+        return toDetailResponse(songRepository.save(song));
     }
 
     public SongDTO.SongDetailResponse publish(Integer id, Integer currentUserId) {
@@ -113,7 +113,7 @@ public class SongService {
             throw new AccessDeniedException("You can only publish your own songs");
 
         song.setStatus(enumeration.SongStatus.LIVE);
-        return songMapper.toDetailResponse(songRepository.save(song));
+        return toDetailResponse(songRepository.save(song));
     }
 
     @Transactional
@@ -135,7 +135,7 @@ public class SongService {
 
         artistEarningService.recordStream(song.getArtist().getId());
 
-        return songMapper.toDetailResponse(song);
+        return toDetailResponse(song);
     }
 
     public void delete(Integer id, Integer currentUserId) {
@@ -171,6 +171,35 @@ public class SongService {
         String coverUrl = cloudinaryService.uploadImage(file);
         song.setCoverUrl(coverUrl);
 
-        return songMapper.toDetailResponse(songRepository.save(song));
+        return toDetailResponse(songRepository.save(song));
+    }
+
+    private SongDTO.SongDetailResponse toDetailResponse(Song song) {
+        List<GenreDTO.GenreSummaryResponse> genres = songGenreRepository
+                .findBySongId(song.getId())
+                .stream()
+                .map(sg -> new GenreDTO.GenreSummaryResponse(
+                        sg.getGenre().getId(),
+                        sg.getGenre().getName(),
+                        sg.getGenre().getSlug()
+                ))
+                .toList();
+
+        return new SongDTO.SongDetailResponse(
+                song.getId(),
+                song.getArtist().getId(),
+                song.getAlbum() != null ? song.getAlbum().getId() : null,
+                song.getTitle(),
+                song.getDurationSeconds(),
+                song.getFileUrl(),
+                song.getCoverUrl(),
+                song.getTrackNumber(),
+                song.getPlayCount(),
+                song.getStatus(),
+                song.getRequiredAccountType(),
+                genres,
+                song.getCreatedAt(),
+                song.getUpdatedAt()
+        );
     }
 }

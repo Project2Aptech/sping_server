@@ -15,4 +15,10 @@ public class GenreDTO {
             @NotBlank @Size(max = 100) String name,
             @NotBlank @Size(max = 100) String slug
     ) {}
+
+    public record GenreSummaryResponse(
+            Integer id,
+            String name,
+            String slug
+    ) {}
 }

@@ -33,7 +33,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserDTO.UserSelfResponse> getMe(
+    public ResponseEntity<UserDTO.UserDetailResponse> getMe(
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(userService.findSelf(CustomUserDetails.extractId(userDetails)));
     }
@@ -44,14 +44,14 @@ public class UserController {
     }
 
     @PatchMapping("/me")
-    public ResponseEntity<UserDTO.UserSelfResponse> updateMe(
+    public ResponseEntity<UserDTO.UserDetailResponse> updateMe(
             @RequestBody UserDTO.UpdateRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(userService.updateSelf(CustomUserDetails.extractId(userDetails), request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<UserDTO.UserSelfResponse> update(
+    public ResponseEntity<UserDTO.UserDetailResponse> update(
             @PathVariable Integer id,
             @Valid @RequestBody UserDTO.UpdateRequest request) {
         return ResponseEntity.ok(userService.updateSelf(id, request));
@@ -72,7 +72,7 @@ public class UserController {
     }
 
     @PostMapping("/me/avatar")
-    public ResponseEntity<UserDTO.UserSelfResponse> uploadAvatar(
+    public ResponseEntity<UserDTO.UserDetailResponse> uploadAvatar(
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) throws IOException {
         return ResponseEntity.ok(userService.uploadAvatar(

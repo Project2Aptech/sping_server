@@ -52,7 +52,16 @@ public class PlaylistService {
     }
 
     @Transactional(readOnly = true)
-    public Page<SongDTO.SongSummaryResponse> findSongs(Integer playlistId, Pageable pageable) {
+    public Page<SongDTO.SongSummaryResponse> findSongs(Integer playlistId,
+                                                       Integer currentUserId, boolean isAdmin, Pageable pageable) {
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new ResourceNotFoundException("Playlist not found: " + playlistId));
+
+        if (!playlist.isPublic()
+                && !isAdmin
+                && (!playlist.getUser().getId().equals(currentUserId)))
+            throw new AccessDeniedException("This playlist is private");
+
         return playlistSongRepository.findByPlaylistId(playlistId, pageable)
                 .map(ps -> songMapper.toSummaryResponse(ps.getSong()));
     }

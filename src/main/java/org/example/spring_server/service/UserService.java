@@ -32,9 +32,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserDTO.UserSelfResponse findSelf(Integer currentUserId) {
+    public UserDTO.UserDetailResponse findSelf(Integer currentUserId) {
         return userRepository.findById(currentUserId)
-                .map(this::toSelfResponse)
+                .map(this::toDetailResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + currentUserId));
     }
 
@@ -94,7 +94,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public UserDTO.UserSelfResponse updateSelf(Integer id, UserDTO.UpdateRequest request) {
+    public UserDTO.UserDetailResponse updateSelf(Integer id, UserDTO.UpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
 
@@ -103,10 +103,10 @@ public class UserService {
         if (request.avatarUrl() != null)   user.setAvatarUrl(request.avatarUrl());
         if (request.birthDate() != null)   user.setBirthDate(request.birthDate());
 
-        return toSelfResponse(userRepository.save(user));
+        return toDetailResponse(userRepository.save(user));
     }
 
-    public UserDTO.UserSelfResponse uploadAvatar(Integer userId, MultipartFile file)
+    public UserDTO.UserDetailResponse uploadAvatar(Integer userId, MultipartFile file)
             throws IOException, java.io.IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
@@ -114,7 +114,7 @@ public class UserService {
         String avatarUrl = cloudinaryService.uploadImage(file);
         user.setAvatarUrl(avatarUrl);
 
-        return toSelfResponse(userRepository.save(user));
+        return toDetailResponse(userRepository.save(user));
     }
 
     private UserDTO.UserDetailResponse toDetailResponse(User user) {
@@ -137,18 +137,6 @@ public class UserService {
         return new UserDTO.UserPublicResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getDisplayName(),
-                user.getAvatarUrl(),
-                user.getBio(),
-                user.getBirthDate()
-        );
-    }
-
-    private UserDTO.UserSelfResponse toSelfResponse(User user) {
-        return new UserDTO.UserSelfResponse(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
                 user.getDisplayName(),
                 user.getAvatarUrl(),
                 user.getBio(),

@@ -2,13 +2,11 @@ package org.example.spring_server.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.spring_server.dto.AlbumDTO;
+import org.example.spring_server.dto.ArtistEarningDTO;
 import org.example.spring_server.dto.PlaylistDTO;
 import org.example.spring_server.dto.UserDTO;
 import org.example.spring_server.enums.enumeration;
-import org.example.spring_server.service.AlbumService;
-import org.example.spring_server.service.PlaylistService;
-import org.example.spring_server.service.SongService;
-import org.example.spring_server.service.UserService;
+import org.example.spring_server.service.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -27,7 +25,8 @@ public class AdminController {
     private final UserService userService;
     private final SongService songService;
     private final AlbumService albumService;
-    private PlaylistService playlistService;
+    private final PlaylistService playlistService;
+    private final ArtistEarningService artistEarningService;
 
     @GetMapping("/playlists")
     public ResponseEntity<Page<PlaylistDTO.PlaylistSummaryResponse>> getAllPlaylists(
@@ -87,5 +86,12 @@ public class AdminController {
     public ResponseEntity<Void> publishSong(@PathVariable Integer id) {
         songService.publish(id, null);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/earnings/{artistId}")
+    public ResponseEntity<Page<ArtistEarningDTO.ArtistEarningResponse>> getByArtist(
+            @PathVariable Integer artistId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(artistEarningService.findByArtist(artistId, pageable));
     }
 }

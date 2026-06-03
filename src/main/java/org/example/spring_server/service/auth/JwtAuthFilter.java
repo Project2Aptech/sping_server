@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.spring_server.security.CustomUserDetails;
+import org.example.spring_server.service.SubscriptionService;
 import org.example.spring_server.service.UserDetailsServiceImpl;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final UserDetailsServiceImpl userDetailsService;
+    private final SubscriptionService subscriptionService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -49,9 +53,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Extract userId directly from CustomUserDetails — no extra DB query needed
+            Integer userId = CustomUserDetails.extractId(userDetails);
+            subscriptionService.checkAndExpireIfNeeded(userId);
         }
 
         filterChain.doFilter(request, response);
     }
-
 }

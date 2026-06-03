@@ -1,8 +1,10 @@
 package org.example.spring_server.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.spring_server.dto.SubscriptionDTO;
+import org.example.spring_server.enums.enumeration;
 import org.example.spring_server.security.CustomUserDetails;
 import org.example.spring_server.service.SubscriptionService;
 import org.springframework.data.domain.Page;
@@ -12,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/subscriptions")
@@ -48,5 +52,23 @@ public class SubscriptionController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(subscriptionService.cancel(
                 CustomUserDetails.extractId(userDetails)));
+    }
+
+    @PostMapping("/create-payment")
+    public ResponseEntity<Map<String, String>> createPayment(
+            @RequestParam Integer userId,
+            @RequestParam enumeration.PlanType planType,
+            HttpServletRequest request) {
+        String url = subscriptionService.createPaymentUrl(userId, planType, request);
+        return ResponseEntity.ok(Map.of("paymentUrl", url));
+    }
+
+    @GetMapping("/vnpay-return")
+    public ResponseEntity<Map<String, String>> vnpayReturn(
+            @RequestParam Map<String, String> params) {
+        subscriptionService.handleVNPayReturn(params);
+        String code    = params.get("vnp_ResponseCode");
+        String message = "00".equals(code) ? "Payment successful" : "Payment failed";
+        return ResponseEntity.ok(Map.of("code", code, "message", message));
     }
 }

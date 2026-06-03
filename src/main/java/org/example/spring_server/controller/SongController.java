@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/songs")
@@ -99,12 +100,14 @@ public class SongController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/genre/{genreId}")
-    public ResponseEntity<Page<SongDTO.SongSummaryResponse>> getByGenre(
-            @PathVariable Integer genreId,
+    @GetMapping("/filter")
+    public ResponseEntity<Page<SongDTO.SongSummaryResponse>> filterByGenres(
+            @RequestParam List<Integer> genreIds,
+            @RequestParam(defaultValue = "false") boolean matchAll,
             @PageableDefault(size = 20, sort = "playCount", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(songService.findByGenre(genreId, pageable));
+        return ResponseEntity.ok(songGenreService.findSongsByGenres(genreIds, matchAll, pageable));
     }
+
     @PostMapping(value = "/{id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
     public ResponseEntity<SongDTO.SongDetailResponse> uploadCover(

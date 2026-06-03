@@ -44,8 +44,13 @@ public class PlaylistController {
     @GetMapping("/{id}/songs")
     public ResponseEntity<Page<SongDTO.SongSummaryResponse>> getSongs(
             @PathVariable Integer id,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(playlistService.findSongs(id, pageable));
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Integer currentUserId = userDetails != null
+                ? CustomUserDetails.extractId(userDetails) : null;
+        boolean isAdmin = userDetails != null
+                && CustomUserDetails.isAdmin(userDetails);
+        return ResponseEntity.ok(playlistService.findSongs(id, currentUserId, isAdmin, pageable));
     }
 
     @PostMapping

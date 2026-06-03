@@ -8,12 +8,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface SongRepository extends JpaRepository<Song, Integer> {
     Page<Song> findByAlbumId(Integer albumId, Pageable pageable);
     Page<Song> findByArtistId(Integer artistId, Pageable pageable);
     Page<Song> findByStatus(enumeration.SongStatus status, Pageable pageable);
     Page<Song> findByTitleContainingIgnoreCase(String title, Pageable pageable);
-
-    @Query("SELECT s FROM Song s JOIN SongGenre sg ON sg.song.id = s.id WHERE sg.genre.id = :genreId AND s.status = 'LIVE'")
-    Page<Song> findLiveByGenreId(@Param("genreId") Integer genreId, Pageable pageable);
+    Page<Song> findByIdInAndStatus(List<Integer> ids, enumeration.SongStatus status, Pageable pageable);
 }

@@ -44,6 +44,7 @@ public class SongDTO {
             Integer durationSeconds,
             String coverUrl,
             Long playCount,
+            String fileUrl,
             enumeration.SongStatus status
     ) {}
 }

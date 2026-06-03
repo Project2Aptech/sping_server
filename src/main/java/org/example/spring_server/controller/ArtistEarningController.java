@@ -33,11 +33,4 @@ public class ArtistEarningController {
         return ResponseEntity.ok(artistEarningService.getSummary(
                 CustomUserDetails.extractId(userDetails)));
     }
-
-    @GetMapping("/{artistId}")
-    public ResponseEntity<Page<ArtistEarningDTO.ArtistEarningResponse>> getByArtist(
-            @PathVariable Integer artistId,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(artistEarningService.findByArtist(artistId, pageable));
-    }
 }

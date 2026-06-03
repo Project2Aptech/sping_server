@@ -12,15 +12,17 @@ import org.example.spring_server.exception.ResourceNotFoundException;
 import org.example.spring_server.mapper.SongMapper;
 import org.example.spring_server.repository.*;
 import org.example.spring_server.service.cloudinary.CloudinaryService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -33,9 +35,12 @@ public class SongService {
     private final UserRepository userRepository;
     private final SongMapper songMapper;
     private final CloudinaryService cloudinaryService;
-    private final HistoryRepository historyRepository;
     private final ArtistEarningService artistEarningService;
     private final SongGenreRepository songGenreRepository;
+    private final StringRedisTemplate redisTemplate;
+
+    @Value("${app.playback.cooldown-minutes:30}")
+    private int cooldownMinutes;
 
     @Transactional(readOnly = true)
     public SongDTO.SongDetailResponse findById(Integer id) {
@@ -118,7 +123,6 @@ public class SongService {
 
     @Transactional
     public SongDTO.SongDetailResponse playback(Integer songId, Integer userId) {
-
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + songId));
 
@@ -131,9 +135,24 @@ public class SongService {
         if (!user.getAccountType().canAccess(song.getRequiredAccountType()))
             throw new AccessDeniedException("Upgrade your account to play this song");
 
-        song.setPlayCount(song.getPlayCount() + 1);
+        // cooldown key unique per user+song combination
+        String cooldownKey = "playback:" + userId + ":" + songId;
 
-        artistEarningService.recordStream(song.getArtist().getId());
+        try {
+            Boolean alreadyPlayed = redisTemplate.hasKey(cooldownKey);
+            if (Boolean.FALSE.equals(alreadyPlayed)) {
+                song.setPlayCount(song.getPlayCount() + 1);
+                songRepository.save(song);
+                artistEarningService.recordStream(song.getArtist().getId());
+                redisTemplate.opsForValue().set(cooldownKey, "1",
+                        Duration.ofMinutes(cooldownMinutes));
+            }
+        } catch (Exception e) {
+            // Redis unavailable — count the play anyway
+            song.setPlayCount(song.getPlayCount() + 1);
+            songRepository.save(song);
+            artistEarningService.recordStream(song.getArtist().getId());
+        }
 
         return toDetailResponse(song);
     }
@@ -155,11 +174,6 @@ public class SongService {
         songRepository.deleteById(id);
     }
 
-    @Transactional(readOnly = true)
-    public Page<SongDTO.SongSummaryResponse> findByGenre(Integer genreId, Pageable pageable) {
-        return songRepository.findLiveByGenreId(genreId, pageable)
-                .map(songMapper::toSummaryResponse);
-    }
     public SongDTO.SongDetailResponse uploadCover(Integer songId, MultipartFile file,
                                                   Integer currentUserId, boolean isAdmin) throws IOException {
         Song song = songRepository.findById(songId)

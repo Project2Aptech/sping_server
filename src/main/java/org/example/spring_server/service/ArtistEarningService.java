@@ -22,7 +22,7 @@ public class ArtistEarningService {
 
     private final ArtistEarningRepository artistEarningRepository;
     private final UserRepository userRepository;
-    private static final BigDecimal RATE_PER_STREAM = new BigDecimal("0.004");
+    private static final BigDecimal RATE_PER_STREAM = new BigDecimal("0.04");
 
     @Transactional(readOnly = true)
     public Page<ArtistEarningDTO.ArtistEarningResponse> findByArtist(

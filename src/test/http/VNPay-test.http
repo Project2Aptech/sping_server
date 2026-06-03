@@ -1,0 +1,14 @@
+### Step 1 — get payment URL
+POST http://localhost:8080/api/v1/subscriptions/create-payment?userId=1&planType=PRO
+
+### Step 2 — open the returned paymentUrl in browser
+### Use VNPAY sandbox test card:
+### Card number : 9704198526191432198
+### Cardholder  : NGUYEN VAN A
+### Expiry date : 07/15
+### OTP         : 123456
+
+### Step 3 — VNPAY redirects to your return URL automatically
+### Confirm user upgraded:
+GET http://localhost:8080/api/v1/users/1
+Authorization: Bearer {{authToken}}

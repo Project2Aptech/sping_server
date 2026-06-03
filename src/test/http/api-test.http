@@ -267,7 +267,14 @@ GET {{baseUrl}}/songs/album/{{albumId}}
 GET {{baseUrl}}/songs/artist/{{userId}}
 
 ### 27. Get songs by genre
-GET {{baseUrl}}/songs/genre/{{genreId}}
+### Filter songs by any of these genres
+GET {{baseUrl}}/songs/filter?genreIds=1,2
+
+### Filter songs that have ALL of these genres
+GET {{baseUrl}}/songs/filter?genreIds=1,2&matchAll=true
+
+### Filter with pagination
+GET {{baseUrl}}/songs/filter?genreIds=1,2&page=0&size=10&sort=playCount,desc
 
 ### 28. Get all live songs (sorted by play count)
 GET {{baseUrl}}/songs

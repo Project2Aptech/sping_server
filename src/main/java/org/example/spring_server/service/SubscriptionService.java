@@ -1,6 +1,8 @@
 package org.example.spring_server.service;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.example.spring_server.config.VNPayConfig;
 import org.example.spring_server.dto.SubscriptionDTO;
 import org.example.spring_server.entity.Subscription;
 import org.example.spring_server.entity.User;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,44 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final VNPayService vnPayService;
+
+    // Pricing in VND
+    private static final Map<enumeration.PlanType, Long> VND_PRICES = Map.of(
+            enumeration.PlanType.PRO,     49000L,
+            enumeration.PlanType.PREMIUM, 99000L
+    );
+
+    public String createPaymentUrl(Integer userId,
+                                   enumeration.PlanType planType,
+                                   HttpServletRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+
+        // txnRef encodes userId + planType so we can decode it on return
+        String txnRef   = userId + "_" + planType.name() + "_" + VNPayConfig.getRandomNumber(6);
+        long amount     = VND_PRICES.get(planType);
+        String orderInfo = "Nang cap " + planType.name() + " cho " + user.getUsername();
+
+        return vnPayService.createPaymentUrl(amount, txnRef, orderInfo, request);
+    }
+
+    public void handleVNPayReturn(Map<String, String> params) {
+        // 1. Verify signature
+        if (!vnPayService.verifyReturn(params))
+            throw new RuntimeException("Invalid VNPAY signature");
+
+        // 2. Check payment response code — "00" = success
+        if (!"00".equals(params.get("vnp_ResponseCode"))) return;
+
+        // 3. Decode txnRef → userId + planType
+        String[] parts  = params.get("vnp_TxnRef").split("_");
+        Integer userId  = Integer.parseInt(parts[0]);
+        enumeration.PlanType planType = enumeration.PlanType.valueOf(parts[1]);
+
+        // 4. Reuse existing subscribe logic
+        subscribe(userId, new SubscriptionDTO.SubscriptionRequest(planType));
+    }
 
     private static final BigDecimal PRO_PRICE     = new BigDecimal("4.99");
     private static final BigDecimal PREMIUM_PRICE = new BigDecimal("9.99");
@@ -45,7 +86,6 @@ public class SubscriptionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
-        // cancel any existing active subscription first
         subscriptionRepository.findByUserIdAndStatus(userId, enumeration.SubscriptionStatus.ACTIVE)
                 .ifPresent(existing -> {
                     existing.setStatus(enumeration.SubscriptionStatus.CANCELLED);
@@ -67,14 +107,12 @@ public class SubscriptionService {
 
         subscriptionRepository.save(subscription);
 
-        // update user account type
         enumeration.AccountType newType = request.planType() == enumeration.PlanType.PRO
                 ? enumeration.AccountType.PRO
                 : enumeration.AccountType.PREMIUM;
         user.setAccountType(newType);
         userRepository.save(user);
 
-        // send confirmation email
         emailService.sendSubscriptionConfirmationEmail(
                 user.getEmail(),
                 user.getDisplayName(),
@@ -103,6 +141,22 @@ public class SubscriptionService {
         emailService.sendSubscriptionCancelledEmail(user.getEmail(), user.getDisplayName());
 
         return toResponse(subscription);
+    }
+
+    @Transactional
+    public void checkAndExpireIfNeeded(Integer userId) {
+        subscriptionRepository
+                .findByUserIdAndStatus(userId, enumeration.SubscriptionStatus.ACTIVE)
+                .ifPresent(sub -> {
+                    if (sub.getExpiresAt().isBefore(LocalDateTime.now())) {
+                        sub.setStatus(enumeration.SubscriptionStatus.EXPIRED);
+                        subscriptionRepository.save(sub);
+
+                        User user = sub.getUser();
+                        user.setAccountType(enumeration.AccountType.NORMAL);
+                        userRepository.save(user);
+                    }
+                });
     }
 
     private SubscriptionDTO.SubscriptionResponse toResponse(Subscription s) {

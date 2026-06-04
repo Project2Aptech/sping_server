@@ -54,8 +54,8 @@ public class AlbumService {
             throw new AccessDeniedException("You can only create albums for your own account");
 
         // verify the artistId belongs to a user with ARTIST or ADMIN role
-        if (!userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ARTIST)
-                && !userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ADMIN))
+        if (userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ARTIST)
+                && userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ADMIN))
             throw new AccessDeniedException("Target user is not an artist");
 
         if (albumRepository.existsByArtistIdAndTitle(request.artistId(), request.title()))

@@ -1,10 +1,7 @@
 package org.example.spring_server.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.spring_server.dto.AlbumDTO;
-import org.example.spring_server.dto.ArtistEarningDTO;
-import org.example.spring_server.dto.PlaylistDTO;
-import org.example.spring_server.dto.UserDTO;
+import org.example.spring_server.dto.*;
 import org.example.spring_server.enums.enumeration;
 import org.example.spring_server.service.*;
 import org.springframework.data.domain.Page;
@@ -28,6 +25,13 @@ public class AdminController {
     private final PlaylistService playlistService;
     private final ArtistEarningService artistEarningService;
 
+    @GetMapping("/songs")
+    public ResponseEntity<Page<SongDTO.SongDetailResponse>> getAllSongs(
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(songService.findAllWithDetails(pageable));
+    }
+
     @GetMapping("/playlists")
     public ResponseEntity<Page<PlaylistDTO.PlaylistSummaryResponse>> getAllPlaylists(
             @PageableDefault(size = 20) Pageable pageable) {
@@ -50,7 +54,7 @@ public class AdminController {
     public ResponseEntity<Page<UserDTO.UserDetailResponse>> getUsersByRole(
             @PathVariable enumeration.UserRole role,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(userService.findByRole(role, pageable));
+        return ResponseEntity.ok(userService.findByRoleAdmin(role, pageable));
     }
 
     @PatchMapping("/users/{id}/role")
@@ -93,5 +97,11 @@ public class AdminController {
             @PathVariable Integer artistId,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(artistEarningService.findByArtist(artistId, pageable));
+    }
+
+    public ResponseEntity<UserDTO.UserDetailResponse> updateRole(
+            @PathVariable Integer id,
+            @RequestBody UserDTO.AdminUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateRole(id, request));
     }
 }

@@ -74,6 +74,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getDisplayName(),
                 user.getAvatarUrl(),
+                user.getBirthDate(),
                 user.getRole(),
                 user.getAccountType()
         );

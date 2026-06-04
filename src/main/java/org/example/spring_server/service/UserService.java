@@ -25,9 +25,9 @@ public class UserService {
     private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
-    public UserDTO.UserPublicResponse findPublicById(Integer id) {
+    public UserDTO.UserDetailResponse findPublicById(Integer id) {
         return userRepository.findById(id)
-                .map(this::toPublicResponse)
+                .map(this::toDetailResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id));
     }
 
@@ -39,13 +39,13 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserDTO.UserPublicResponse> findAll(String query, Pageable pageable) {
+    public Page<UserDTO.UserSummary> findAll(String query, Pageable pageable) {
         if (query != null && !query.isBlank()) {
             return userRepository.findByUsernameContainingIgnoreCaseOrDisplayNameContainingIgnoreCase(
                             query, query, pageable)
-                    .map(this::toPublicResponse);
+                    .map(this::toSummary);
         }
-        return userRepository.findAll(pageable).map(this::toPublicResponse);
+        return userRepository.findAll(pageable).map(this::toSummary);
     }
 
     @Transactional(readOnly = true)
@@ -69,9 +69,15 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserDTO.UserDetailResponse> findByRole(enumeration.UserRole role, Pageable pageable) {
+    public Page<UserDTO.UserDetailResponse> findByRoleAdmin(enumeration.UserRole role, Pageable pageable) {
         return userRepository.findByRole(role, pageable)
                 .map(this::toDetailResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserDTO.UserSummary> findByRole(enumeration.UserRole role, Pageable pageable) {
+        return userRepository.findByRole(role, pageable)
+                .map(this::toSummary);
     }
 
     public void delete(Integer id) {
@@ -133,14 +139,15 @@ public class UserService {
         );
     }
 
-    private UserDTO.UserPublicResponse toPublicResponse(User user) {
-        return new UserDTO.UserPublicResponse(
+    private UserDTO.UserSummary toSummary(User user) {
+        return new UserDTO.UserSummary(
                 user.getId(),
                 user.getUsername(),
+                user.getEmail(),
                 user.getDisplayName(),
                 user.getAvatarUrl(),
-                user.getBio(),
-                user.getBirthDate()
-        );
+                user.getBirthDate(),
+                user.getRole(),
+                user.getAccountType());
     }
 }

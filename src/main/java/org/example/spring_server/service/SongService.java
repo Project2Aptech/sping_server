@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.example.spring_server.dto.GenreDTO;
 import org.example.spring_server.dto.SongDTO;
 import org.example.spring_server.entity.Album;
-import org.example.spring_server.entity.History;
 import org.example.spring_server.entity.Song;
 import org.example.spring_server.entity.User;
 import org.example.spring_server.enums.enumeration;
@@ -62,6 +61,12 @@ public class SongService {
     }
 
     @Transactional(readOnly = true)
+    public Page<SongDTO.SongDetailResponse> findAllWithDetails(Pageable pageable) {
+        return songRepository.findAll(pageable)
+                .map(this::toDetailResponse);
+    }
+
+    @Transactional(readOnly = true)
     public Page<SongDTO.SongSummaryResponse> findLive(Pageable pageable) {
         return songRepository.findByStatus(enumeration.SongStatus.LIVE, pageable)
                 .map(songMapper::toSummaryResponse);
@@ -81,8 +86,8 @@ public class SongService {
             throw new AccessDeniedException("You can only upload songs for your own account");
 
         // verify the artistId belongs to a user with ARTIST or ADMIN role
-        if (!userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ARTIST)
-                && !userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ADMIN))
+        if (userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ARTIST)
+                && userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ADMIN))
             throw new AccessDeniedException("Target user is not an artist");
 
         User artist = userRepository.findById(request.artistId())

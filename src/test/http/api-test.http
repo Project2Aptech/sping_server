@@ -656,6 +656,9 @@ Authorization: Bearer {{authToken}}
 GET {{baseUrl}}/admin/playlists
 Authorization: Bearer {{authToken}}
 
+### 80. Get all songs including private (admin only)
+GET {{baseUrl}}/admin/songs
+Authorization: Bearer {{authToken}}
 ### ─────────────────────────────────────────
 ### ERROR CASES - ADMIN
 ### ─────────────────────────────────────────

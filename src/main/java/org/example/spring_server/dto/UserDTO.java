@@ -37,9 +37,9 @@ public class UserDTO {
             String email,
             String displayName,
             String avatarUrl,
+            LocalDate birthDate,
             enumeration.UserRole role,
-            enumeration.AccountType accountType
-    ) {}
+            enumeration.AccountType accountType) {}
 
     public record UserDetailResponse(
             Integer id,
@@ -58,16 +58,6 @@ public class UserDTO {
     public record UserPublicResponse(
             Integer id,
             String username,
-            String displayName,
-            String avatarUrl,
-            String bio,
-            LocalDate birthDate
-    ) {}
-
-    public record UserSelfResponse(
-            Integer id,
-            String username,
-            String email,
             String displayName,
             String avatarUrl,
             String bio,

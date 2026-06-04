@@ -21,5 +21,4 @@ public interface SongMapper {
     @Mapping(target = "createdAt",         ignore = true)
     @Mapping(target = "updatedAt",         ignore = true)
     Song toEntity(SongDTO.SongRequest request);
-
 }

@@ -3,13 +3,13 @@ package org.example.spring_server.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.spring_server.dto.UserDTO;
+import org.example.spring_server.enums.enumeration;
 import org.example.spring_server.security.CustomUserDetails;
 import org.example.spring_server.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +26,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<Page<UserDTO.UserPublicResponse>> getAll(
+    public ResponseEntity<Page<UserDTO.UserSummary>> getAll(
             @RequestParam(required = false) String query,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(userService.findAll(query, pageable));
@@ -39,7 +39,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDTO.UserPublicResponse> getById(@PathVariable Integer id) {
+    public ResponseEntity<UserDTO.UserDetailResponse> getById(@PathVariable Integer id) {
         return ResponseEntity.ok(userService.findPublicById(id));
     }
 
@@ -63,19 +63,18 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/role")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<UserDTO.UserDetailResponse> updateRole(
-            @PathVariable Integer id,
-            @RequestBody UserDTO.AdminUpdateRequest request) {
-        return ResponseEntity.ok(userService.updateRole(id, request));
-    }
-
     @PostMapping("/me/avatar")
     public ResponseEntity<UserDTO.UserDetailResponse> uploadAvatar(
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails) throws IOException {
         return ResponseEntity.ok(userService.uploadAvatar(
                 CustomUserDetails.extractId(userDetails), file));
+    }
+
+    @GetMapping("/role/{role}")
+    public ResponseEntity<Page<UserDTO.UserSummary>> getUsersByRole(
+            @PathVariable enumeration.UserRole role,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(userService.findByRole(role, pageable));
     }
 }

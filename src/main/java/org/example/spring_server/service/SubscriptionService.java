@@ -159,6 +159,18 @@ public class SubscriptionService {
                 });
     }
 
+    @Transactional(readOnly = true)
+    public Page<SubscriptionDTO.SubscriptionResponse> findAllAdmin(Pageable pageable) {
+        return subscriptionRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SubscriptionDTO.SubscriptionResponse> findByUserAdmin(Integer userId, Pageable pageable) {
+        return subscriptionRepository.findByUserId(userId, pageable)
+                .map(this::toResponse);
+    }
+
     private SubscriptionDTO.SubscriptionResponse toResponse(Subscription s) {
         return new SubscriptionDTO.SubscriptionResponse(
                 s.getId(),

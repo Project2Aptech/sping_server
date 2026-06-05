@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/playlists/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/artists/*/followers/count").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/artists/followers").permitAll()
                         .requestMatchers("/api/v1/subscriptions/vnpay-return").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/subscriptions/create-payment").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")

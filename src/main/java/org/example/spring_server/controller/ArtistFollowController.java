@@ -55,4 +55,12 @@ public class ArtistFollowController {
         artistFollowService.unfollow(CustomUserDetails.extractId(userDetails), artistId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/followers")
+    public ResponseEntity<Page<ArtistFollowDTO.FollowerResponse>> getMyFollowers(
+            @PageableDefault(size = 20) Pageable pageable,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        Integer userId = CustomUserDetails.extractId(userDetails);
+        return ResponseEntity.ok(artistFollowService.findFollowers(userId, pageable));
+    }
 }

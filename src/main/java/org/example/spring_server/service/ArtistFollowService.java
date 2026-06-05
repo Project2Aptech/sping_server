@@ -61,6 +61,21 @@ public class ArtistFollowService {
         artistFollowRepository.deleteByUserIdAndArtistId(userId, artistId);
     }
 
+    @Transactional(readOnly = true)
+    public Page<ArtistFollowDTO.FollowerResponse> findFollowers(Integer artistId, Pageable pageable) {
+        return artistFollowRepository.findByArtistId(artistId, pageable)
+                .map(this::toFollowerResponse);
+    }
+
+    private ArtistFollowDTO.FollowerResponse toFollowerResponse(ArtistFollow af) {
+        return new ArtistFollowDTO.FollowerResponse(
+                af.getUser().getId(),
+                af.getUser().getDisplayName(),
+                af.getUser().getAvatarUrl(),
+                af.getFollowedAt()
+        );
+    }
+
     private ArtistFollowDTO.ArtistFollowResponse toResponse(ArtistFollow af) {
         return new ArtistFollowDTO.ArtistFollowResponse(
                 af.getArtist().getId(),

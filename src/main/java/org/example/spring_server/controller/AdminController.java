@@ -24,6 +24,7 @@ public class AdminController {
     private final AlbumService albumService;
     private final PlaylistService playlistService;
     private final ArtistEarningService artistEarningService;
+    private final SubscriptionService subscriptionService;
 
     @GetMapping("/songs")
     public ResponseEntity<Page<SongDTO.SongDetailResponse>> getAllSongs(
@@ -103,5 +104,19 @@ public class AdminController {
             @PathVariable Integer id,
             @RequestBody UserDTO.AdminUpdateRequest request) {
         return ResponseEntity.ok(userService.updateRole(id, request));
+    }
+
+    @GetMapping("/subscriptions")
+    public ResponseEntity<Page<SubscriptionDTO.SubscriptionResponse>> getAllSubscriptions(
+            @PageableDefault(size = 20) Pageable pageable) {
+
+        return ResponseEntity.ok(subscriptionService.findAllAdmin(pageable));
+    }
+
+    @GetMapping("/subscriptions/user/{userId}")
+    public ResponseEntity<Page<SubscriptionDTO.SubscriptionResponse>> getSubscriptionsByUser(
+            @PathVariable Integer userId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(subscriptionService.findByUserAdmin(userId, pageable));
     }
 }

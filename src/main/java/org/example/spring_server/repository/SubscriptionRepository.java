@@ -14,4 +14,5 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Inte
     Optional<Subscription> findByUserIdAndStatus(Integer userId, enumeration.SubscriptionStatus status);
     boolean existsByUserIdAndStatusAndExpiresAtAfter(
             Integer userId, enumeration.SubscriptionStatus status, LocalDateTime now);
+    Page<Subscription> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

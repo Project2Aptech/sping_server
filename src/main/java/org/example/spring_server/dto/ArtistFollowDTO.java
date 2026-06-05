@@ -10,4 +10,11 @@ public class ArtistFollowDTO {
             String avatarUrl,
             LocalDateTime followedAt
     ) {}
+
+    public record FollowerResponse(
+            Integer userId,
+            String displayName,
+            String avatarUrl,
+            LocalDateTime followedAt
+    ) {}
 }

@@ -659,9 +659,19 @@ Authorization: Bearer {{authToken}}
 ### 80. Get all songs including private (admin only)
 GET {{baseUrl}}/admin/songs
 Authorization: Bearer {{authToken}}
+
+### Get all subscriptions (admin only)
+GET {{baseUrl}}/admin/subscriptions
+Authorization: Bearer {{authToken}}
+
+### Get subscriptions by user (admin only)
+GET {{baseUrl}}/admin/subscriptions/user/{{userId}}
+Authorization: Bearer {{authToken}}
+
 ### ─────────────────────────────────────────
 ### ERROR CASES - ADMIN
 ### ─────────────────────────────────────────
 
 ### ERR - Access admin without admin role
 GET {{baseUrl}}/admin/users
+

@@ -145,4 +145,20 @@ public class SongController {
                 CustomUserDetails.isAdmin(userDetails));
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ARTIST', 'ADMIN')")
+    public ResponseEntity<SongDTO.SongDetailResponse> update(
+            @PathVariable Integer id,
+            @RequestBody SongDTO.SongRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        return ResponseEntity.ok(songService.update(
+                id,
+                request,
+                CustomUserDetails.extractId(userDetails),
+                CustomUserDetails.isAdmin(userDetails)
+        ));
+    }
+
 }

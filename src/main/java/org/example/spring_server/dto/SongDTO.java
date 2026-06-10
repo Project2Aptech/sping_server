@@ -16,9 +16,9 @@ public class SongDTO {
             Integer durationSeconds,
             String coverUrl,
             Integer trackNumber,
-            enumeration.AccountType requiredAccountType
+            enumeration.AccountType requiredAccountType,
+            enumeration.SongStatus status
     ) {}
-
     public record SongDetailResponse(
             Integer id,
             Integer artistId,
@@ -45,6 +45,7 @@ public class SongDTO {
             String coverUrl,
             Long playCount,
             String fileUrl,
+            LocalDateTime createdAt,
             enumeration.SongStatus status
     ) {}
 }

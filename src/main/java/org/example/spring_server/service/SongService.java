@@ -86,12 +86,14 @@ public class SongService {
             throw new AccessDeniedException("You can only upload songs for your own account");
 
         // verify the artistId belongs to a user with ARTIST or ADMIN role
-        if (userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ARTIST)
-                && userRepository.existsByIdAndRole(request.artistId(), enumeration.UserRole.ADMIN))
-            throw new AccessDeniedException("Target user is not an artist");
-
         User artist = userRepository.findById(request.artistId())
-                .orElseThrow(() -> new ResourceNotFoundException("Artist not found: " + request.artistId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Artist not found: " + request.artistId()));
+
+        if (artist.getRole() != enumeration.UserRole.ARTIST
+                && artist.getRole() != enumeration.UserRole.ADMIN) {
+            throw new AccessDeniedException("Target user is not an artist");
+        }
 
         String fileUrl = cloudinaryService.uploadAudio(file);
 
@@ -191,6 +193,48 @@ public class SongService {
         song.setCoverUrl(coverUrl);
 
         return toDetailResponse(songRepository.save(song));
+    }
+
+    public SongDTO.SongDetailResponse update(
+            Integer songId,
+            SongDTO.SongRequest request,
+            Integer currentUserId,
+            boolean isAdmin
+    ) {
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new ResourceNotFoundException("Song not found: " + songId));
+
+        // Authorization
+        if (!isAdmin && !song.getArtist().getId().equals(currentUserId))
+            throw new AccessDeniedException("You can only update your own songs");
+
+        // Update basic fields
+        song.setTitle(request.title());
+        song.setDurationSeconds(request.durationSeconds());
+        song.setTrackNumber(request.trackNumber());
+        song.setRequiredAccountType(request.requiredAccountType());
+        if (request.status() != null) {
+            song.setStatus(request.status());
+        }
+
+        // Update album
+        if (request.albumId() != null) {
+            Album album = albumRepository.findById(request.albumId())
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException("Album not found: " + request.albumId()));
+
+            if (!isAdmin &&
+                    !album.getArtist().getId().equals(song.getArtist().getId())) {
+                throw new AccessDeniedException("This album does not belong to you");
+            }
+
+            song.setAlbum(album);
+        } else {
+            song.setAlbum(null);
+        }
+
+        Song updatedSong = songRepository.save(song);
+        return toDetailResponse(updatedSong);
     }
 
     private SongDTO.SongDetailResponse toDetailResponse(Song song) {

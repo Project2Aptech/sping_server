@@ -37,7 +37,7 @@ public class EmailService {
 
     @Async
     public void sendPasswordResetEmail(String toEmail, String resetToken) {
-        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
+        String resetLink = frontendUrl + "/auth/reset-password?token=" + resetToken;
         String subject = "Reset your SportT5 password";
         String body = """
                 <h2>Password Reset Request</h2>
